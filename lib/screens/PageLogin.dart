@@ -1,8 +1,10 @@
+import 'package:email_validator/email_validator.dart';
 import 'package:evreka_bin_tracker/constants.dart';
 import 'package:evreka_bin_tracker/main.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class Login extends StatefulWidget {
@@ -17,6 +19,25 @@ class _LoginState extends State<Login> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   double size_height;
   double size_width;
+  Future _alertShow(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Something is Wrong'),
+          content: const Text('Your username or password is wrong.'),
+          actions: [
+            FlatButton(
+              child: Text('Ok'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +62,8 @@ class _LoginState extends State<Login> {
                     padding: const EdgeInsets.symmetric(horizontal: 30.0),
                     child: TextFormField(
                       validator: (input) {
-                        if (input.isEmpty) return "Username is not filled";
+                        if (input.isEmpty || !EmailValidator.validate(input))
+                          return "Username is not filled or invalid email adress";
                       },
                       onSaved: (input) => email = input,
                       decoration: InputDecoration(labelText: "Username"),
@@ -88,16 +110,30 @@ class _LoginState extends State<Login> {
       // authentication
       formInfo.save();
       try {
-        var user = await FirebaseAuth.instance
+        await FirebaseAuth.instance
             .signInWithEmailAndPassword(email: email, password: password);
-        print("success");
         Route route = MaterialPageRoute(
             builder: (context) => MyHomePage(title: "Map Screen"));
         Navigator.pushReplacement(context, route);
-      } catch (e) {
-        // TODO
+        print("success");
+      } on PlatformException catch (e) {
+        _alertShow(context);
+        print("an error occured");
+        print(e);
+      } on Exception catch (e) {
+        _alertShow(context);
         print(e);
       }
+      /* 
+      Scaffold.of(context).showSnackBar(SnackBar(
+        content: SnackBar(
+          content: Text("Your Username or Password is wrong"),
+        ),
+      ));
+      print("an error occured");
+      Route route = MaterialPageRoute(
+          builder: (context) => MyHomePage(title: "Map Screen"));
+      Navigator.pushReplacement(context, route); */
     }
   }
 }

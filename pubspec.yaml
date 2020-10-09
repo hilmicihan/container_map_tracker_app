@@ -16,6 +16,7 @@ dependencies:
   geolocator: ^6.0.0
   google_maps_flutter: ^0.5.19
   firebase_auth: ^0.18.1+2
+  email_validator: '^1.0.5'
   flutter:
     sdk: flutter
   connectivity: ^0.4.9+3
