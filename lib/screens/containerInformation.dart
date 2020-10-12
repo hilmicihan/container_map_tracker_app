@@ -9,13 +9,23 @@ class ContainerInfo {
   String temperature;
   LatLng location;
   ContainerInfo({
-    @required this.containerId,
+    this.containerId,
     this.date = "not entered",
     this.occRate = 0,
     this.sensorId = "not entered",
     this.temperature = "not entered",
     this.location,
   });
+  void printContainer() {
+    print("----------------container ınfo----------------- ");
+    print("Container Id" + this.containerId.toString());
+    print("date" + this.date);
+
+    print("occ rate " + this.occRate.toString());
+    print("Sensor Id" + this.sensorId);
+    print("temperature" + this.temperature);
+    print("Location" + this.location.toString());
+  }
 }
 
 class PageContainerInfo extends StatefulWidget {

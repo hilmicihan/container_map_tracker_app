@@ -6,14 +6,16 @@ class PageConnection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          LinearProgressIndicator(backgroundColor: Colors.black),
-          Text("Checking Internet Connection"),
-        ],
+    return Scaffold(
+      body: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            LinearProgressIndicator(backgroundColor: Colors.black),
+            Text("Checking Internet Connection"),
+          ],
+        ),
       ),
     );
   }

@@ -1,18 +1,18 @@
+import 'dart:async';
 import 'dart:collection';
-
+import 'package:evreka_bin_tracker/screens/pageConnection.dart';
+import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:evreka_bin_tracker/screens/PageLogin.dart';
 import 'package:evreka_bin_tracker/screens/containerInformation.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+void main() {
   runApp(MyApp());
 }
 
@@ -44,8 +44,11 @@ class _MyHomePageState extends State<MyHomePage> {
   CameraPosition _initialPosition =
       CameraPosition(target: LatLng(39.933365, 32.859741), zoom: 12);
   Position position;
-  bool isConnected = false;
   var _locationStatus;
+  bool isLocatinAccess = false;
+  // refresh screen to check internet connection
+  Timer timer;
+  bool isConnected = false;
   void CheckConnectivity() async {
     var ConnectionResult = await (Connectivity().checkConnectivity());
     if (ConnectionResult == ConnectivityResult.mobile ||
@@ -53,26 +56,41 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         isConnected = true;
       });
+    } else {
+      isConnected = false;
+      setState(() {});
     }
   }
 
-  Future<void> currentPosition() async {
-    position = await getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    _initialPosition = CameraPosition(
-        target: LatLng(position.latitude, position.longitude), zoom: 12);
+  Future<void> setPermissions() async {
+    print("---------------inside set permissions");
+    if (await Permission.location.request().isGranted) {
+      // Either the permission was already granted before or the user just granted it.
+      isLocatinAccess = true;
+    }
+
+// You can request multiple permissions at once.
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.location,
+    ].request();
+    print(statuses[Permission.location]);
+    print("---------------------Location Access" + isLocatinAccess.toString());
+    isLocatinAccess = true;
+  }
+
+  Future<void> requestPermission() async {
+    await Permission.location.request();
+    setState(() {});
   }
 
   @override
   void initState() {
     // TODO: implement initState
-    super.initState();
+
     CheckConnectivity();
-    currentPosition();
-    /*   Firebase.initializeApp().whenComplete(
-      () {
-        print("initialize complete");
-      },
-    ); */
+
+    requestPermission();
+    super.initState();
   }
 
   @override
@@ -83,18 +101,9 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: MapScreen(initialPosition: _initialPosition, position: position),
-      /*  Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: isConnected == false
-            ? PageConnection()
-            : Column(
-                children: [
-                  Text("hello"),
-                ],
-              ),
-      ), */
+      body: isConnected == false
+          ? PageConnection()
+          : MapScreen(initialPosition: _initialPosition, position: position),
     );
   }
 }
@@ -131,8 +140,59 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context) {
+    return LoadMap();
+  }
+
+  Future takeContainerInfo() async {
+    ContainerInfo newContainer;
+    final GlobalKey<FormState> _keyForm = GlobalKey<FormState>();
+    await showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return SimpleDialog(title: Text("Add new container"), children: [
+            Column(
+              children: [
+                Form(
+                  key: _keyForm,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                          keyboardType: TextInputType.number,
+                          onSaved: (input) => newContainer.sensorId = input,
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                          ],
+                          decoration: InputDecoration(
+                              labelText: "Container Id",
+                              icon: Icon(Icons.access_alarm))),
+                      TextFormField(
+                        onSaved: (input) => newContainer.temperature = input,
+                        decoration: InputDecoration(labelText: "Temperature"),
+                        obscureText: true,
+                      ),
+                      TextFormField(
+                        onSaved: (input) => newContainer.date = input,
+                        decoration: InputDecoration(labelText: "Date"),
+                        obscureText: true,
+                      ),
+                    ],
+                  ),
+                ),
+                FlatButton(
+                  onPressed: () {
+                    _keyForm.currentState.save();
+                    print("-----------------" + newContainer.date);
+                    //newContainer.printContainer();
+                    //return newContainer;
+                  },
+                  child: Text("OK"),
+                )
+              ],
+            ),
+          ]);
+        });
   }
 
   _addPolyLine() {
@@ -279,11 +339,6 @@ class _MapScreenState extends State<MapScreen> {
         ]);
       },
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LoadMap();
   }
 
   void _addMarker() async {
